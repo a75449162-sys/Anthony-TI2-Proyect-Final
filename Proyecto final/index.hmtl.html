@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Gestor de Citas Académicas</title>
+
+<style>
+:root {
+    --primary: #4f46e5;
+    --secondary: #6366f1;
+    --card: #ffffff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at 10% 20%, rgba(255,255,255,0.15), transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(255,255,255,0.12), transparent 40%),
+        linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    background-size: 200% 200%;
+    animation: fondo 15s ease infinite;
+}
+
+@keyframes fondo {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 🔐 LOGIN */
+#login {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card {
+    background: var(--card);
+    padding: 40px;
+    width: 360px;
+    border-radius: 20px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+    animation: fadeUp 0.8s ease;
+    text-align: center;
+}
+
+.login-card h2 {
+    margin-top: 0;
+    color: var(--primary);
+}
+
+.login-card input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 10px;
+    border: 1px solid #c7d2fe;
+}
+
+.login-card button {
+    width: 100%;
+    padding: 14px;
+    margin-top: 15px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.login-card button:hover {
+    transform: translateY(-3px);
+}
+
+/* 📦 APP */
+#app {
+    display: none;
+    animation: fadeUp 0.8s ease;
+}
+
+header {
+    padding: 25px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    text-align: center;
+}
+
+header button {
+    margin-top: 10px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: none;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    cursor: pointer;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 40px auto;
+    padding: 0 20px;
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 30px;
+}
+
+.card, .table-card {
+    background: white;
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-radius: 10px;
+    border: 1px solid #c7d2fe;
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 12px;
+    border-bottom: 1px solid #e0e7ff;
+}
+
+.estado {
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.Pendiente { background: #fde68a; }
+.Confirmada { background: #bbf7d0; }
+.Cancelada { background: #fecaca; }
+
+.acciones button {
+    width: auto;
+    padding: 6px 10px;
+    margin-right: 5px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- 🔐 LOGIN -->
+<div id="login">
+    <div class="login-card">
+        <h2>🔐 Iniciar Sesión</h2>
+        <input type="text" id="user" placeholder="Usuario">
+        <input type="password" placeholder="Contraseña">
+        <button onclick="login()">Entrar</button>
+        <p style="font-size:12px;opacity:.6">Simulación académica</p>
+    </div>
+</div>
+
+<!-- 📦 APP -->
+<div id="app">
+<header>
+    <h1>📅 Gestor de Citas Académicas</h1>
+    <button onclick="logout()">Cerrar sesión</button>
+</header>
+
+<div class="container">
+    <div class="card">
+        <h2 id="tituloForm">Agendar cita</h2>
+        <form id="form">
+            <input type="hidden" id="index">
+            <input id="estudiante" placeholder="Estudiante" required>
+            <input id="docente" placeholder="Docente" required>
+            <input type="date" id="fecha" required>
+            <input type="time" id="hora" required>
+            <select id="estado">
+                <option>Pendiente</option>
+                <option>Confirmada</option>
+                <option>Cancelada</option>
+            </select>
+            <button>Guardar</button>
+        </form>
+    </div>
+
+    <div class="table-card">
+        <h2>Citas</h2>
+        <table>
+            <tbody id="tabla"></tbody>
+        </table>
+    </div>
+</div>
+</div>
+
+<script>
+const loginDiv = document.getElementById("login");
+const appDiv = document.getElementById("app");
+
+if (localStorage.getItem("sesion")) mostrarApp();
+
+function login() {
+    localStorage.setItem("sesion", "activa");
+    mostrarApp();
+}
+
+function logout() {
+    localStorage.removeItem("sesion");
+    location.reload();
+}
+
+function mostrarApp() {
+    loginDiv.style.display = "none";
+    appDiv.style.display = "block";
+}
+
+/* Citas */
+let citas = JSON.parse(localStorage.getItem("citas")) || [];
+const tabla = document.getElementById("tabla");
+
+function render() {
+    tabla.innerHTML = "";
+    citas.forEach((c,i)=>{
+        tabla.innerHTML += `
+        <tr>
+            <td>${c.estudiante}</td>
+            <td>${c.docente}</td>
+            <td>${c.fecha}</td>
+            <td>${c.hora}</td>
+            <td><span class="estado ${c.estado}">${c.estado}</span></td>
+            <td class="acciones">
+                <button onclick="edit(${i})">✏️</button>
+                <button onclick="del(${i})">🗑️</button>
+            </td>
+        </tr>`;
+    });
+}
+
+form.onsubmit = e => {
+    e.preventDefault();
+    const i = index.value;
+    const c = { estudiante:estudiante.value, docente:docente.value, fecha:fecha.value, hora:hora.value, estado:estado.value };
+    i==="" ? citas.push(c) : citas[i]=c;
+    localStorage.setItem("citas", JSON.stringify(citas));
+    form.reset(); index.value="";
+    render();
+};
+
+function edit(i){
+    const c=citas[i];
+    estudiante.value=c.estudiante;
+    docente.value=c.docente;
+    fecha.value=c.fecha;
+    hora.value=c.hora;
+    estado.value=c.estado;
+    index.value=i;
+}
+
+function del(i){
+    citas.splice(i,1);
+    localStorage.setItem("citas", JSON.stringify(citas));
+    render();
+}
+
+render();
+</script>
+
+</body>
+</html>
